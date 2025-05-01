@@ -14,11 +14,36 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Finding commit message for push
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          export MESSAGE="$(echo "$COMMIT_MESSAGE")"
+          echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
+          echo "Found message"
+          echo "$MESSAGE"
+        env:
+          COMMIT_MESSAGE: "${{ github.event.head_commit.message }}"
+      - name: Finding commit message for pull request
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          export MESSAGE="$(git log --format=%B -n 1 "$LAST_COMMIT")"
+          echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
+          echo "Found message"
+          echo "$MESSAGE"
+        env:
+          LAST_COMMIT: "${{ github.event.pull_request.head.sha }}"
       - name: Triggering crow
         run: |
           set -euo pipefail
           echo "Queueing $GITHUB_SHA"
-          curl --fail -X PUT --header 'Authorization: Bearer ${{ secrets.CROW_INTEGRATION_TOKEN }}' https://compiler.vads.kastel.kit.edu/api/integration/token/queue/rev/"$GITHUB_SHA"
+          curl --fail \
+               -X PUT \
+               --header 'Authorization: Bearer ${{ secrets.CROW_INTEGRATION_TOKEN }}' \
+               --header 'Content-Type: application/json' \
+               --data "$(echo "$MESSAGE" | jq -R -s '{ commitMessage: . }')" \
+               https://compiler.vads.kastel.kit.edu/api/integration/token/queue/rev/"$GITHUB_SHA"
       - name: Explaining a bit
         run: |
           echo "The commit was pushed in the crow queue."
