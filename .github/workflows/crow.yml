@@ -1,0 +1,25 @@
+name: Crow workflow integration
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  trigger-crow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Triggering crow
+        run: |
+          set -euo pipefail
+          echo "Queueing $GITHUB_SHA"
+          curl --fail -X PUT --header 'Authorization: Bearer ${{ secrets.CROW_INTEGRATION_TOKEN }}' https://compiler.vads.kastel.kit.edu/api/integration/token/queue/rev/"$GITHUB_SHA"
+      - name: Explaining a bit
+        run: |
+          echo "The commit was pushed in the crow queue."
+          echo "Crow periodically syncs the status from its queue to your repository, so a check should appear here soon :)"
