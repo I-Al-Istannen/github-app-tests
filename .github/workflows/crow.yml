@@ -41,7 +41,12 @@ jobs:
         run: |
           set -euo pipefail
           echo "Queueing $GITHUB_SHA for $GH_COMMIT"
-          curl --fail -X PUT --header 'Authorization: Bearer ${{ secrets.CROW_INTEGRATION_TOKEN }}' --header 'Content-Type: application/json' --data "$(echo "$MESSAGE" | jq -R -s '{ commitMessage: ., checkedCommit: "$GH_COMMIT" }')" https://compiler.vads.kastel.kit.edu/api/integration/token/queue/rev/"$GITHUB_SHA"
+          curl --fail \
+               -X PUT \
+               --header 'Authorization: Bearer ${{ secrets.CROW_INTEGRATION_TOKEN }}' \
+               --header 'Content-Type: application/json' \
+               --data "$(echo "$MESSAGE" | jq -R -s "{ commitMessage: ., checkedCommit: \"$GH_COMMIT\" }")" \
+               https://compiler.vads.kastel.kit.edu/api/integration/token/queue/rev/"$GITHUB_SHA"
       - name: Explaining a bit
         run: |
           echo "The commit was pushed in the crow queue."
